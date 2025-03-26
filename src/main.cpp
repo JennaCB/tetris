@@ -153,10 +153,13 @@ struct shape
 		return rightest;
 	}
 
-	bool collides(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, std::optional<int> key)
+	bool collides(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, std::optional<int> key, point& shape_pos)
 	{
 		for (point pos : blocks)
 		{
+			pos.x = pos.x + shape_pos.x;
+			pos.y = pos.y + shape_pos.y;
+
 			if (key == std::nullopt && grid[pos.y + 1][pos.x] != std::nullopt)
 				return true;
 			if (key == KEY_RIGHT && grid[pos.y][pos.x + 1] != std::nullopt)
@@ -167,325 +170,83 @@ struct shape
 		return false;
 	}
 
-	void draw(grid grid, Texture2D texture)
+	void draw(grid& grid, Texture2D& texture, point& shape_pos)
 	{
 		Rectangle source(0, 0, 30, 30);
 
 		for (point pos : blocks)
 		{
-			Rectangle destination(grid.x + (grid.square_width * pos.x), grid.y + (grid.square_width * pos.y), grid.square_width, grid.square_width);
+			Rectangle destination(grid.x + (grid.square_width * (pos.x+shape_pos.x)), grid.y + (grid.square_width * (pos.y+shape_pos.y)), grid.square_width, grid.square_width);
 			NPatchInfo nPatchInfo(source, 30, 30, 5, 5, NPATCH_NINE_PATCH);
 			DrawTextureNPatch(texture, nPatchInfo, destination, Vector2(0, 0), 0, color);
 		}
 	}
 
-	void move_left(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid)
+	void move_left(point& shape_pos)
 	{
-		for (point& pos : blocks)
-			--pos.x;
+		--shape_pos.x;
 	}
 
-	void move_right(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid)
+	void move_right(point& shape_pos)
 	{
-		for (point& pos : blocks)
-			++pos.x;
+		++shape_pos.x;
 	}
 
 	void rotate_clockwise()
 	{
-		if (color != YELLOW)
+		if (color == SKYBLUE)
 		{
-			if (blocks[2].y == blocks[3].y)
-			{
-				if (blocks[0].y < blocks[2].y)
-				{
-
-					if (color == GREEN)
-					{
-						blocks[1].y = blocks[1].y + 2;
-						++blocks[2].x, --blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						++blocks[1].x, ++blocks[1].y;
-						--blocks[3].x, ++blocks[3].y;
-					}
-					else
-					{
-						++blocks[1].x, --blocks[1].y;
-						--blocks[3].x, ++blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].y = blocks[0].y + 2;
-
-					if (color == PURPLE || color == GREEN)
-						++blocks[0].x, ++blocks[0].y;
-
-					if (color == BLUE || color == RED)
-						blocks[0].x = blocks[0].x + 2;
-				}
-				else if (color == SKYBLUE && blocks[2].x < blocks[3].x)
-				{
-					blocks[0].x = blocks[0].x + 2, blocks[0].y = blocks[0].y + 2;
-					++blocks[1].x, ++blocks[1].y;
-					--blocks[3].x, --blocks[3].y;
-				}
-				else if (color == SKYBLUE && blocks[2].x > blocks[3].x)
-				{
-					blocks[0].x = blocks[0].x - 2, blocks[0].y = blocks[0].y - 2;
-					--blocks[1].x, --blocks[1].y;
-					++blocks[3].x, ++blocks[3].y;
-				}
-				else
-				{
-					if (color == GREEN)
-					{
-						blocks[1].y = blocks[1].y - 2;
-						--blocks[2].x, ++blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						--blocks[1].x, --blocks[1].y;
-						++blocks[3].x, --blocks[3].y;
-					}
-					else
-					{
-						--blocks[1].x, ++blocks[1].y;
-						++blocks[3].x, --blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].y = blocks[0].y - 2;
-					if (color == PURPLE || color == GREEN)
-						--blocks[0].x, --blocks[0].y;
-					if (color == BLUE || color == RED)
-						blocks[0].x = blocks[0].x - 2;
-				}
-			}
-			else if (blocks[2].x == blocks[3].x)
-			{
-				if (blocks[0].x > blocks[2].x)
-				{
-					if (color == GREEN)
-					{
-						blocks[1].x = blocks[1].x - 2;
-						++blocks[2].x, ++blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						--blocks[1].x, ++blocks[1].y;
-						--blocks[3].x, --blocks[3].y;
-					}
-					else
-					{
-						++blocks[1].x, ++blocks[1].y;
-						--blocks[3].x, --blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].x = blocks[0].x - 2;
-					if (color == PURPLE || color == GREEN)
-						--blocks[0].x, ++blocks[0].y;
-					if (color == BLUE || color == RED)
-						blocks[0].y = blocks[0].y + 2;
-				}
-				else if (color == SKYBLUE && blocks[2].y > blocks[3].y)
-				{
-					++blocks[0].x, --blocks[0].y;
-					--blocks[2].x, ++blocks[2].y;
-					blocks[3].x = blocks[3].x - 2, blocks[3].y = blocks[3].y + 2;
-				}
-				else if (color == SKYBLUE && blocks[2].y < blocks[3].y)
-				{
-					--blocks[0].x , ++blocks[0].y;
-					++blocks[2].x, --blocks[2].y;
-					blocks[3].x = blocks[3].x + 2, blocks[3].y = blocks[3].y - 2;
-				}
-				else
-				{
-					if (color == GREEN)
-					{
-						blocks[1].x = blocks[1].x + 2;
-						--blocks[2].x, --blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						++blocks[1].x, --blocks[1].y;
-						++blocks[3].x, ++blocks[3].y;
-					}
-					else
-					{
-						--blocks[1].x, --blocks[1].y;
-						++blocks[3].x, ++blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].x = blocks[0].x + 2;
-					if (color == PURPLE || color == GREEN)
-						++blocks[0].x, --blocks[0].y;
-					if (color == BLUE || color == RED)
-						blocks[0].y = blocks[0].y - 2;
-				}
-			}
+			if (blocks[0] == point(-1, 0))
+				blocks = { point(1, -1), point(1, 0), point(1, 1), point(1, 2) };
+			else if (blocks[0] == point(1, -1))
+				blocks = { point(2, 1), point(1, 1), point(0, 1), point(-1, 1) };
+			else if (blocks[0] == point(2, 1))
+				blocks = { point(0, 2), point(0, 1), point(0, 0), point(0, -1) };
+			else if (blocks[0] == point(0, 2))
+				blocks = { point(-1, 0), point(0, 0), point(1, 0), point(2, 0) };
+		}
+		else if (color != YELLOW)
+		{
+			for (point& block : blocks)
+				block = point(block.y * -1, block.x);
 		}
 	}
 
 	void rotate_counterclockwise()
 	{
-		if (color != YELLOW)
+		if (color == SKYBLUE)
 		{
-			if (blocks[2].y == blocks[3].y)
-			{
-				if (blocks[0].y < blocks[2].y)
-				{
-
-					if (color == GREEN)
-					{
-						blocks[1].x = blocks[1].x - 2;
-						++blocks[2].x, ++blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						--blocks[1].x, ++blocks[1].y;
-						--blocks[3].x, --blocks[3].y;
-					}
-					else
-					{
-						++blocks[1].x, ++blocks[1].y;
-						--blocks[3].x, --blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].x = blocks[0].x - 2;
-
-					if (color == PURPLE || color == GREEN)
-						--blocks[0].x, ++blocks[0].y;
-
-					if (color == BLUE || color == RED)
-						blocks[0].y = blocks[0].y + 2;
-				}
-				else if (color == SKYBLUE && blocks[2].x < blocks[3].x)
-				{
-					++blocks[0].x, --blocks[0].y;
-					--blocks[2].x, ++blocks[2].y;
-					blocks[3].x = blocks[3].x - 2, blocks[3].y = blocks[3].y + 2;
-				}
-				else if (color == SKYBLUE && blocks[2].x > blocks[3].x)
-				{
-					--blocks[0].x, ++blocks[0].y;
-					++blocks[2].x, --blocks[2].y;
-					blocks[3].x = blocks[3].x + 2, blocks[3].y = blocks[3].y - 2;
-				}
-				else
-				{
-					if (color == GREEN)
-					{
-						blocks[1].x = blocks[1].x + 2;
-						--blocks[2].x, --blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						++blocks[1].x, --blocks[1].y;
-						++blocks[3].x, ++blocks[3].y;
-					}
-					else
-					{
-						--blocks[1].x, --blocks[1].y;
-						++blocks[3].x, ++blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].x = blocks[0].x + 2;
-					if (color == PURPLE || color == GREEN)
-						++blocks[0].x, --blocks[0].y;
-					if (color == BLUE || color == RED)
-						blocks[0].y = blocks[0].y - 2;
-				}
-			}
-			else if (blocks[2].x == blocks[3].x)
-			{
-				if (blocks[0].x < blocks[2].x)
-				{
-					if (color == GREEN)
-					{
-						blocks[1].y = blocks[1].y + 2;
-						++blocks[2].x, --blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						++blocks[1].x, ++blocks[1].y;
-						--blocks[3].x, ++blocks[3].y;
-					}
-					else
-					{
-						++blocks[1].x, --blocks[1].y;
-						--blocks[3].x, ++blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].y = blocks[0].y + 2;
-					if (color == PURPLE || color == GREEN)
-						++blocks[0].x, ++blocks[0].y;
-					if (color == BLUE || color == RED)
-						blocks[0].x = blocks[0].x + 2;
-				}
-				else if (color == SKYBLUE && blocks[2].y < blocks[3].y)
-				{
-					blocks[0].x = blocks[0].x + 2, blocks[0].y = blocks[0].y + 2;
-					++blocks[1].x, ++blocks[1].y;
-					--blocks[3].x, --blocks[3].y;
-				}
-				else if (color == SKYBLUE && blocks[2].y > blocks[3].y)
-				{
-					blocks[0].x = blocks[0].x - 2, blocks[0].y = blocks[0].y - 2;
-					--blocks[1].x, --blocks[1].y;
-					++blocks[3].x, ++blocks[3].y;
-				}
-				else
-				{
-					if (color == GREEN)
-					{
-						blocks[1].y = blocks[1].y - 2;
-						--blocks[2].x, ++blocks[2].y;
-					}
-					else if (color == RED)
-					{
-						--blocks[1].x, --blocks[1].y;
-						++blocks[3].x, --blocks[3].y;
-					}
-					else
-					{
-						--blocks[1].x, ++blocks[1].y;
-						++blocks[3].x, --blocks[3].y;
-					}
-
-					if (color == ORANGE)
-						blocks[0].y = blocks[0].y - 2;
-					if (color == PURPLE || color == GREEN)
-						--blocks[0].x, --blocks[0].y;
-					if (color == BLUE || color == RED)
-						blocks[0].x = blocks[0].x - 2;
-				}
-			}
+			if (blocks[0] == point(-1, 0))
+				blocks = { point(0, 2), point(0, 1), point(0, 0), point(0, -1) };
+			else if (blocks[0] == point(0, 2))
+				blocks = { point(2, 1), point(1, 1), point(0, 1), point(-1, 1) };
+			else if (blocks[0] == point(2, 1))
+				blocks = { point(1, -1), point(1, 0), point(1, 1), point(1, 2) };
+			else if (blocks[0] == point(1, -1))
+				blocks = { point(-1, 0), point(0, 0), point(1, 0), point(2, 0) };
+		}
+		else if (color != YELLOW)
+		{
+			for (point& block : blocks)
+				block = point(block.y, block.x * -1);
 		}
 	}
 };
 
-const shape shape::I = { .color = SKYBLUE, .blocks = {point(3, 0), point(4, 0), point(5, 0), point(6, 0)} };
-const shape shape::J = { .color = BLUE, .blocks = {point(3, 0), point(3, 1), point(4, 1), point(5, 1)} };
-const shape shape::L = { .color = ORANGE, .blocks = {point(5, 0), point(3, 1), point(4, 1), point(5, 1)} };
-const shape shape::O = { .color = YELLOW, .blocks = {point(4, 0), point(5, 0), point(4, 1), point(5, 1)} };
-const shape shape::S = { .color = GREEN, .blocks = {point(4, 0), point(5, 0), point(3, 1), point(4, 1)} };
-const shape shape::T = { .color = PURPLE, .blocks = {point(4, 0), point(3, 1), point(4, 1), point(5, 1)} };
-const shape shape::Z = { .color = RED, .blocks = {point(3, 0), point(4, 0), point(4, 1), point(5, 1)} };
+const shape shape::I = { .color = SKYBLUE,	.blocks = {point(-1, 0), point(0, 0), point(1, 0), point(2, 0)} };
+const shape shape::J = { .color = BLUE,		.blocks = {point(-1, -1), point(-1, 0), point(0, 0), point(1, 0)} };
+const shape shape::L = { .color = ORANGE,	.blocks = {point(1, -1), point(-1, 0), point(0, 0), point(1, 0)} };
+const shape shape::O = { .color = YELLOW,	.blocks = {point(0, -1), point(1, -1), point(0, 0), point(1, 0)} };
+const shape shape::S = { .color = GREEN,	.blocks = {point(0, -1), point(1, -1), point(-1, 0), point(0, 0)} };
+const shape shape::T = { .color = PURPLE,	.blocks = {point(0, -1), point(-1, 0), point(0, 0), point(1, 0)} };
+const shape shape::Z = { .color = RED,		.blocks = {point(-1,-1), point(0,-1), point(0,0), point(1,0)} };
 
 struct preview
 {
 	static constexpr int width_in_squares = 5;
 	static constexpr int height_in_squares = 3;
 
-	void draw(grid grid, std::array<shape, 7> falling_shapes, int current_shape, Texture2D texture)
+	void draw(grid grid, std::array<shape, 7> falling_shapes, int current_shape, Texture2D texture, point shape_pos)
 	{
 		float preview_width = grid.square_width * width_in_squares;
 		float preview_height = grid.square_width * height_in_squares;
@@ -498,6 +259,9 @@ struct preview
 		Rectangle source(0, 0, 30, 30);
 		for (point pos : falling_shapes[current_shape+1].blocks)
 		{
+			pos.x = pos.x + 4;
+			pos.y = pos.y + 1;
+
 			Rectangle destination(x + (grid.square_width * (pos.x - 2.5f)), y + (grid.square_width * (pos.y + 0.5f)), grid.square_width, grid.square_width);
 			NPatchInfo nPatchInfo(source, 30, 30, 5, 5, NPATCH_NINE_PATCH);
 			DrawTextureNPatch(texture, nPatchInfo, destination, Vector2(0, 0), 0, falling_shapes[current_shape + 1].color);
@@ -517,7 +281,7 @@ struct score
 	}
 };
 
-void reset_game(grid& grid, preview& preview, score& score , std::array<shape, 7>& falling_shapes, int& current_shape)
+void reset_game(grid& grid, preview& preview, score& score , std::array<shape, 7>& falling_shapes, int& current_shape, point& shape_pos)
 {
 	for (auto& row : grid.grid)
 	{
@@ -527,10 +291,17 @@ void reset_game(grid& grid, preview& preview, score& score , std::array<shape, 7
 
 	score.score = 0;
 
-	std::array<shape, 7> next_falling_shapes = { shape::I, shape::J, shape::L, shape::O, shape::S, shape::T, shape::Z };
-	falling_shapes = next_falling_shapes;
+	//std::array<shape, 7> next_falling_shapes = { shape::I, shape::J, shape::L, shape::O, shape::S, shape::T, shape::Z };
+	//falling_shapes = next_falling_shapes;
+
+	std::random_device rd;
+	std::mt19937 g(rd());
+
+	std::shuffle(falling_shapes.begin(), falling_shapes.end(), g);
 
 	current_shape = 0;
+
+	shape_pos = point(4, 1);
 }
 
 int main()
@@ -560,6 +331,8 @@ int main()
 
 	auto time_of_last_frame = std::chrono::steady_clock::now();
 
+	point shape_pos(4, 1);
+
 	while (!WindowShouldClose())
 	{
 		BeginDrawing();
@@ -568,13 +341,13 @@ int main()
 			grid.draw(texture);
 
 			if (current_shape < 6)
-				preview.draw(grid, falling_shapes, current_shape, texture);
+				preview.draw(grid, falling_shapes, current_shape, texture, shape_pos);
 			else
-				preview.draw(grid, next_falling_shapes, -1, texture);
+				preview.draw(grid, next_falling_shapes, -1, texture, shape_pos);
 
 			score.draw(grid);
 
-			falling_shapes[current_shape].draw(grid, texture);
+			falling_shapes[current_shape].draw(grid, texture, shape_pos);
 
 			auto falling_time = std::chrono::milliseconds(250);
 
@@ -582,13 +355,13 @@ int main()
 			const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - time_of_last_frame);
 			
 			if (IsKeyPressed(KEY_LEFT_CONTROL))
-				reset_game(grid, preview, score, falling_shapes, current_shape);
+				reset_game(grid, preview, score, falling_shapes, current_shape, shape_pos);
 
-			if (IsKeyPressed(KEY_LEFT) && falling_shapes[current_shape].leftest().x > 0 && !falling_shapes[current_shape].collides(grid.grid, KEY_LEFT))
-				falling_shapes[current_shape].move_left(grid.grid);
+			if (IsKeyPressed(KEY_LEFT) && falling_shapes[current_shape].leftest().x + shape_pos.x > 0 && !falling_shapes[current_shape].collides(grid.grid, KEY_LEFT, shape_pos))
+				falling_shapes[current_shape].move_left(shape_pos);
 
-			if (IsKeyPressed(KEY_RIGHT) && falling_shapes[current_shape].rightest().x < grid.grid[0].size() - 1 &&!falling_shapes[current_shape].collides(grid.grid, KEY_RIGHT))
-				falling_shapes[current_shape].move_right(grid.grid);
+			if (IsKeyPressed(KEY_RIGHT) && falling_shapes[current_shape].rightest().x+shape_pos.x < grid.grid[0].size() - 1 &&!falling_shapes[current_shape].collides(grid.grid, KEY_RIGHT, shape_pos))
+				falling_shapes[current_shape].move_right(shape_pos);
 
 			if (IsKeyDown(KEY_S))
 				falling_time = std::chrono::milliseconds(100);
@@ -599,11 +372,8 @@ int main()
 
 			if (IsKeyPressed(KEY_SPACE))
 			{
-				while (falling_shapes[current_shape].lowest().y < 19 && !falling_shapes[current_shape].collides(grid.grid, std::nullopt))
-				{
-					for (point& pos : falling_shapes[current_shape].blocks)
-						++pos.y;
-				}
+				while (falling_shapes[current_shape].lowest().y+shape_pos.y < 19 && !falling_shapes[current_shape].collides(grid.grid, std::nullopt, shape_pos))
+					++shape_pos.y;
 			}
 
 			if (IsKeyPressed(KEY_UP))
@@ -615,10 +385,9 @@ int main()
 
 			if (elapsed_time > falling_time)
 			{
-				if (falling_shapes[current_shape].lowest().y < 19 && !falling_shapes[current_shape].collides(grid.grid, std::nullopt))
+				if (falling_shapes[current_shape].lowest().y+shape_pos.y < 19 && !falling_shapes[current_shape].collides(grid.grid, std::nullopt, shape_pos))
 				{
-					for (point& pos : falling_shapes[current_shape].blocks)
-						++pos.y;
+					++shape_pos.y;
 				}
 				else
 				{
@@ -626,21 +395,23 @@ int main()
 					std::vector<point> deleted_lines_positions;
 					for (point pos : falling_shapes[current_shape].blocks)
 					{
+						pos.x = pos.x + shape_pos.x;
+						pos.y = pos.y + shape_pos.y;
+
 						grid.grid[pos.y][pos.x] = falling_shapes[current_shape].color;
 						if (grid.line_full(pos))
 						{
-							//TakeScreenshot("1.png");
 							grid.delete_line(pos, score.score);
-							//TakeScreenshot("2.png");
 							++deleted_lines;
 							deleted_lines_positions.push_back(pos);
 						}
 					}
 
+					shape_pos = point(4, 1);
+
 					if (deleted_lines > 0)
 					{
 						grid.move_lines(deleted_lines_positions, deleted_lines);
-						//TakeScreenshot("3.png");
 						deleted_lines = 0;
 					}
 					
@@ -652,8 +423,6 @@ int main()
 					{
 						current_shape = 0;
 						falling_shapes = next_falling_shapes;
-
-						std::array<shape, 7> next_falling_shapes = { shape::I, shape::J, shape::L, shape::O, shape::S, shape::T, shape::Z };
 						std::shuffle(next_falling_shapes.begin(), next_falling_shapes.end(), g);
 					}
 				}
