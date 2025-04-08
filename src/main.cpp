@@ -326,6 +326,26 @@ void reset_game(grid& grid, preview& preview, score& score , std::array<shape, 7
 	shape_pos = point(4, 1);
 }
 
+bool game_over(grid& grid, preview& preview, score& score, std::array<shape, 7>& falling_shapes, int& current_shape, point& shape_pos)
+{
+	point button_pos{ (grid.screen_width / 2) - (grid.square_width * 3.75), ((grid.screen_height / 3) * 2) - grid.square_width };
+	Vector2 button_size{ grid.square_width * 7.5, grid.square_width * 2 };
+	
+	Vector2 game_over_size = MeasureTextEx(GetFontDefault(), "Game Over", grid.square_width * 3, (grid.square_width * 3)/10);
+	Vector2 new_game_size = MeasureTextEx(GetFontDefault(), "New Game", grid.square_width * 1.5, (grid.square_width * 1.5) / 10);
+	
+	DrawText("Game Over", (grid.screen_width / 2) - (game_over_size.x/2), (grid.screen_height / 2) - (game_over_size.y / 2), grid.square_width * 3, WHITE);
+	DrawRectangle(button_pos.x, button_pos.y, button_size.x, button_size.y, WHITE);
+	DrawText("New Game", (grid.screen_width / 2) -  (new_game_size.x / 2), (button_pos.y+(button_size.y/2)) - (new_game_size.y/2), grid.square_width * 1.5, BLACK);
+
+	if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), Rectangle(button_pos.x, button_pos.y, button_size.x, button_size.y)))
+	{
+		reset_game(grid, preview, score, falling_shapes, current_shape, shape_pos);
+		return false;
+	}
+	return true;
+}
+
 int main()
 {
 	InitWindow(800, 500, "Tetris");
@@ -355,100 +375,116 @@ int main()
 
 	point shape_pos(4, 1);
 
+	bool is_game_over = false;
+
 	while (!WindowShouldClose())
 	{
 		BeginDrawing();
 		ClearBackground(BLACK);
 
-			grid.draw(texture);
-
-			if (current_shape < 6)
-				preview.draw(grid, falling_shapes, current_shape, texture, shape_pos);
-			else
-				preview.draw(grid, next_falling_shapes, -1, texture, shape_pos);
-
-			score.draw(grid);
-
-			falling_shapes[current_shape].draw(grid, texture, shape_pos);
-
-			auto falling_time = std::chrono::milliseconds(250);
-
-			const auto now = std::chrono::steady_clock::now();
-			const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - time_of_last_frame);
-			
-			if (IsKeyPressed(KEY_LEFT_CONTROL))
-				reset_game(grid, preview, score, falling_shapes, current_shape, shape_pos);
-
-			if (IsKeyPressed(KEY_LEFT))
-				falling_shapes[current_shape].try_move_left(grid.grid,shape_pos);
-
-			if (IsKeyPressed(KEY_RIGHT))
-				falling_shapes[current_shape].try_move_right(grid.grid,shape_pos);
-
-			if (IsKeyDown(KEY_S))
-				falling_time = std::chrono::milliseconds(100);
-			
-			if (IsKeyReleased(KEY_S))
-				falling_time = std::chrono::milliseconds(250);
-
-
-			if (IsKeyPressed(KEY_SPACE))
-				while (falling_shapes[current_shape].try_move_down(grid.grid, shape_pos))
-					/* intentionally blank */ ;
-				
-
-			if (IsKeyPressed(KEY_UP))
-				falling_shapes[current_shape].try_rotate_clockwise(grid.grid, shape_pos);
-
-			if (IsKeyPressed(KEY_DOWN))
-				falling_shapes[current_shape].try_rotate_counterclockwise(grid.grid, shape_pos);
-
-
-			if (elapsed_time > falling_time)
+			if (shape_pos.y == 1 && falling_shapes[current_shape].collides(grid.grid, shape_pos))
 			{
-				if (falling_shapes[current_shape].try_move_down(grid.grid, shape_pos))
-				{
-					/* intentionally blank */
-				}
+				is_game_over = true;
+			}
+
+			if (is_game_over)
+			{
+				if(!game_over(grid, preview, score, falling_shapes, current_shape, shape_pos))
+					is_game_over = false;
+
+			}
+			else
+			{
+				grid.draw(texture);
+
+				if (current_shape < 6)
+					preview.draw(grid, falling_shapes, current_shape, texture, shape_pos);
 				else
+					preview.draw(grid, next_falling_shapes, -1, texture, shape_pos);
+
+				score.draw(grid);
+
+				falling_shapes[current_shape].draw(grid, texture, shape_pos);
+
+				auto falling_time = std::chrono::milliseconds(250);
+
+				const auto now = std::chrono::steady_clock::now();
+				const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - time_of_last_frame);
+
+				if (IsKeyPressed(KEY_LEFT_CONTROL))
+					reset_game(grid, preview, score, falling_shapes, current_shape, shape_pos);
+
+				if (IsKeyPressed(KEY_LEFT))
+					falling_shapes[current_shape].try_move_left(grid.grid, shape_pos);
+
+				if (IsKeyPressed(KEY_RIGHT))
+					falling_shapes[current_shape].try_move_right(grid.grid, shape_pos);
+
+				if (IsKeyDown(KEY_S))
+					falling_time = std::chrono::milliseconds(100);
+
+				if (IsKeyReleased(KEY_S))
+					falling_time = std::chrono::milliseconds(250);
+
+
+				if (IsKeyPressed(KEY_SPACE))
+					while (falling_shapes[current_shape].try_move_down(grid.grid, shape_pos))
+						/* intentionally blank */;
+
+
+				if (IsKeyPressed(KEY_UP))
+					falling_shapes[current_shape].try_rotate_clockwise(grid.grid, shape_pos);
+
+				if (IsKeyPressed(KEY_DOWN))
+					falling_shapes[current_shape].try_rotate_counterclockwise(grid.grid, shape_pos);
+
+
+				if (elapsed_time > falling_time)
 				{
-					int deleted_lines = 0;
-					std::vector<point> deleted_lines_positions;
-					for (point pos : falling_shapes[current_shape].blocks)
+					if (falling_shapes[current_shape].try_move_down(grid.grid, shape_pos))
 					{
-						pos.x = pos.x + shape_pos.x;
-						pos.y = pos.y + shape_pos.y;
-
-						grid.grid[pos.y][pos.x] = falling_shapes[current_shape].color;
-						if (grid.line_full(pos))
-						{
-							grid.delete_line(pos, score.score);
-							++deleted_lines;
-							deleted_lines_positions.push_back(pos);
-						}
-					}
-
-					shape_pos = point(4, 1);
-
-					if (deleted_lines > 0)
-					{
-						grid.move_lines(deleted_lines_positions, deleted_lines);
-						deleted_lines = 0;
-					}
-					
-					if (current_shape < 6)
-					{
-						++current_shape;
+						/* intentionally blank */
 					}
 					else
 					{
-						current_shape = 0;
-						falling_shapes = next_falling_shapes;
-						std::shuffle(next_falling_shapes.begin(), next_falling_shapes.end(), g);
-					}
-				}
+						int deleted_lines = 0;
+						std::vector<point> deleted_lines_positions;
+						for (point pos : falling_shapes[current_shape].blocks)
+						{
+							pos.x = pos.x + shape_pos.x;
+							pos.y = pos.y + shape_pos.y;
 
-				time_of_last_frame = now;
+							grid.grid[pos.y][pos.x] = falling_shapes[current_shape].color;
+							if (grid.line_full(pos))
+							{
+								grid.delete_line(pos, score.score);
+								++deleted_lines;
+								deleted_lines_positions.push_back(pos);
+							}
+						}
+
+						shape_pos = point(4, 1);
+
+						if (deleted_lines > 0)
+						{
+							grid.move_lines(deleted_lines_positions, deleted_lines);
+							deleted_lines = 0;
+						}
+
+						if (current_shape < 6)
+						{
+							++current_shape;
+						}
+						else
+						{
+							current_shape = 0;
+							falling_shapes = next_falling_shapes;
+							std::shuffle(next_falling_shapes.begin(), next_falling_shapes.end(), g);
+						}
+					}
+
+					time_of_last_frame = now;
+				}
 			}
 		
 		EndDrawing();
