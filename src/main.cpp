@@ -153,18 +153,29 @@ struct shape
 		return rightest;
 	}
 
-	bool collides(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, std::optional<int> key, point& shape_pos)
+	bool collides(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
 	{
 		for (point pos : blocks)
 		{
 			pos.x = pos.x + shape_pos.x;
 			pos.y = pos.y + shape_pos.y;
 
-			if (key == std::nullopt && grid[pos.y + 1][pos.x] != std::nullopt)
+			if (grid[pos.y][pos.x] != std::nullopt)
 				return true;
-			if (key == KEY_RIGHT && grid[pos.y][pos.x + 1] != std::nullopt)
+		}
+		return false;
+	}
+
+	bool outside(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
+	{
+		for (point pos : blocks)
+		{
+			pos.x = pos.x + shape_pos.x;
+			pos.y = pos.y + shape_pos.y;
+
+			if (pos.y > grid.size() - 1 || pos.y < 0)
 				return true;
-			if (key == KEY_LEFT && grid[pos.y][pos.x - 1] != std::nullopt)
+			if (pos.x > grid[pos.y].size()-1 || pos.x < 0)
 				return true;
 		}
 		return false;
@@ -182,18 +193,52 @@ struct shape
 		}
 	}
 
-	void move_left(point& shape_pos)
+	bool try_move_left(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
 	{
+		point backup = shape_pos;
+
 		--shape_pos.x;
+
+		if (outside(grid, shape_pos) || collides(grid, shape_pos))
+		{
+			shape_pos = backup;
+			return false;
+		}
+		return true;
 	}
 
-	void move_right(point& shape_pos)
+	bool try_move_right(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
 	{
+		point backup = shape_pos;
+
 		++shape_pos.x;
+
+		if (outside(grid, shape_pos) || collides(grid, shape_pos))
+		{
+			shape_pos = backup;
+			return false;
+		}
+		return true;
 	}
 
-	void rotate_clockwise()
+	bool try_move_down(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
 	{
+		point backup = shape_pos;
+
+		++shape_pos.y;
+
+		if (outside(grid, shape_pos) || collides(grid, shape_pos))
+		{
+			shape_pos = backup;
+			return false;
+		}
+		return true;
+	}
+
+	bool try_rotate_clockwise(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
+	{
+		std::array<point, 4> backup = blocks;
+
 		if (color == SKYBLUE)
 		{
 			if (blocks[0] == point(-1, 0))
@@ -210,10 +255,19 @@ struct shape
 			for (point& block : blocks)
 				block = point(block.y * -1, block.x);
 		}
+
+		if (outside(grid, shape_pos) || collides(grid, shape_pos))
+		{
+			blocks = backup;
+			return false;
+		}
+		return true;
 	}
 
-	void rotate_counterclockwise()
+	bool try_rotate_counterclockwise(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
 	{
+		std::array<point, 4> backup = blocks;
+
 		if (color == SKYBLUE)
 		{
 			if (blocks[0] == point(-1, 0))
@@ -230,6 +284,13 @@ struct shape
 			for (point& block : blocks)
 				block = point(block.y, block.x * -1);
 		}
+
+		if (outside(grid, shape_pos) || collides(grid, shape_pos))
+		{
+			blocks = backup;
+			return false;
+		}
+		return true;
 	}
 };
 
@@ -290,9 +351,6 @@ void reset_game(grid& grid, preview& preview, score& score , std::array<shape, 7
 	}
 
 	score.score = 0;
-
-	//std::array<shape, 7> next_falling_shapes = { shape::I, shape::J, shape::L, shape::O, shape::S, shape::T, shape::Z };
-	//falling_shapes = next_falling_shapes;
 
 	std::random_device rd;
 	std::mt19937 g(rd());
@@ -357,11 +415,11 @@ int main()
 			if (IsKeyPressed(KEY_LEFT_CONTROL))
 				reset_game(grid, preview, score, falling_shapes, current_shape, shape_pos);
 
-			if (IsKeyPressed(KEY_LEFT) && falling_shapes[current_shape].leftest().x + shape_pos.x > 0 && !falling_shapes[current_shape].collides(grid.grid, KEY_LEFT, shape_pos))
-				falling_shapes[current_shape].move_left(shape_pos);
+			if (IsKeyPressed(KEY_LEFT))
+				falling_shapes[current_shape].try_move_left(grid.grid,shape_pos);
 
-			if (IsKeyPressed(KEY_RIGHT) && falling_shapes[current_shape].rightest().x+shape_pos.x < grid.grid[0].size() - 1 &&!falling_shapes[current_shape].collides(grid.grid, KEY_RIGHT, shape_pos))
-				falling_shapes[current_shape].move_right(shape_pos);
+			if (IsKeyPressed(KEY_RIGHT))
+				falling_shapes[current_shape].try_move_right(grid.grid,shape_pos);
 
 			if (IsKeyDown(KEY_S))
 				falling_time = std::chrono::milliseconds(100);
@@ -371,24 +429,21 @@ int main()
 
 
 			if (IsKeyPressed(KEY_SPACE))
-			{
-				while (falling_shapes[current_shape].lowest().y+shape_pos.y < 19 && !falling_shapes[current_shape].collides(grid.grid, std::nullopt, shape_pos))
-					++shape_pos.y;
-			}
+				while (falling_shapes[current_shape].try_move_down(grid.grid, shape_pos))
+					/* intentionally blank */ ;
+				
 
 			if (IsKeyPressed(KEY_UP))
-				falling_shapes[current_shape].rotate_clockwise();
+				falling_shapes[current_shape].try_rotate_clockwise(grid.grid, shape_pos);
 
 			if (IsKeyPressed(KEY_DOWN))
-				falling_shapes[current_shape].rotate_counterclockwise();
+				falling_shapes[current_shape].try_rotate_counterclockwise(grid.grid, shape_pos);
 
 
 			if (elapsed_time > falling_time)
 			{
-				if (falling_shapes[current_shape].lowest().y+shape_pos.y < 19 && !falling_shapes[current_shape].collides(grid.grid, std::nullopt, shape_pos))
-				{
-					++shape_pos.y;
-				}
+				if (falling_shapes[current_shape].try_move_down(grid.grid, shape_pos))
+					/* intentionally blank */;
 				else
 				{
 					int deleted_lines = 0;
