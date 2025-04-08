@@ -117,42 +117,6 @@ struct shape
 
 	static const shape I, J, L, O, S, T, Z;
 
-	point lowest()
-	{
-		point lowest(0,0);
-
-		for (point pos : blocks)
-		{
-			if (pos.y > lowest.y)
-				lowest = pos;
-		}
-		return lowest;
-	}
-
-	point leftest()
-	{
-		point leftest(blocks[0].x, 0);
-
-		for (point pos : blocks)
-		{
-			if (pos.x < leftest.x)
-				leftest = pos;
-		}
-		return leftest;
-	}
-
-	point rightest()
-	{
-		point rightest(0, 0);
-
-		for (point pos : blocks)
-		{
-			if (pos.x > rightest.x)
-				rightest = pos;
-		}
-		return rightest;
-	}
-
 	bool collides(const std::array<std::array<std::optional<Color>, grid::width_in_squares>, grid::height_in_squares>& grid, point& shape_pos)
 	{
 		for (point pos : blocks)
@@ -241,14 +205,14 @@ struct shape
 
 		if (color == SKYBLUE)
 		{
-			if (blocks[0] == point(-1, 0))
-				blocks = { point(1, -1), point(1, 0), point(1, 1), point(1, 2) };
-			else if (blocks[0] == point(1, -1))
-				blocks = { point(2, 1), point(1, 1), point(0, 1), point(-1, 1) };
-			else if (blocks[0] == point(2, 1))
-				blocks = { point(0, 2), point(0, 1), point(0, 0), point(0, -1) };
-			else if (blocks[0] == point(0, 2))
-				blocks = { point(-1, 0), point(0, 0), point(1, 0), point(2, 0) };
+			if (blocks[0] == point(-1, -1))
+				blocks = { point(1, -2), point(1, -1), point(1, 0), point(1, 1) };
+			else if (blocks[0] == point(1, -2))
+				blocks = { point(2, 0), point(1, 0), point(0, 0), point(-1, 0) };
+			else if (blocks[0] == point(2, 0))
+				blocks = { point(0, 1), point(0, 0), point(0, -1), point(0, -2) };
+			else if (blocks[0] == point(0, 1))
+				blocks = { point(-1, -1), point(0, -1), point(1, -1), point(2, -1) };
 		}
 		else if (color != YELLOW)
 		{
@@ -270,14 +234,14 @@ struct shape
 
 		if (color == SKYBLUE)
 		{
-			if (blocks[0] == point(-1, 0))
-				blocks = { point(0, 2), point(0, 1), point(0, 0), point(0, -1) };
-			else if (blocks[0] == point(0, 2))
-				blocks = { point(2, 1), point(1, 1), point(0, 1), point(-1, 1) };
-			else if (blocks[0] == point(2, 1))
-				blocks = { point(1, -1), point(1, 0), point(1, 1), point(1, 2) };
-			else if (blocks[0] == point(1, -1))
-				blocks = { point(-1, 0), point(0, 0), point(1, 0), point(2, 0) };
+			if (blocks[0] == point(-1, -1))
+				blocks = { point(0, 1), point(0, 0), point(0, -1), point(0, -2) };
+			else if (blocks[0] == point(0, 1))
+				blocks = { point(2, 0), point(1, 0), point(0, 0), point(-1, 0) };
+			else if (blocks[0] == point(2, 0))
+				blocks = { point(1, -2), point(1, -1), point(1, 0), point(1, 1) };
+			else if (blocks[0] == point(1, -2))
+				blocks = { point(-1, -1), point(0, -1), point(1, -1), point(2, -1) };
 		}
 		else if (color != YELLOW)
 		{
@@ -294,7 +258,7 @@ struct shape
 	}
 };
 
-const shape shape::I = { .color = SKYBLUE,	.blocks = {point(-1, 0), point(0, 0), point(1, 0), point(2, 0)} };
+const shape shape::I = { .color = SKYBLUE,	.blocks = {point(-1, -1), point(0, -1), point(1, -1), point(2, -1)} };
 const shape shape::J = { .color = BLUE,		.blocks = {point(-1, -1), point(-1, 0), point(0, 0), point(1, 0)} };
 const shape shape::L = { .color = ORANGE,	.blocks = {point(1, -1), point(-1, 0), point(0, 0), point(1, 0)} };
 const shape shape::O = { .color = YELLOW,	.blocks = {point(0, -1), point(1, -1), point(0, 0), point(1, 0)} };
@@ -443,7 +407,9 @@ int main()
 			if (elapsed_time > falling_time)
 			{
 				if (falling_shapes[current_shape].try_move_down(grid.grid, shape_pos))
-					/* intentionally blank */;
+				{
+					/* intentionally blank */
+				}
 				else
 				{
 					int deleted_lines = 0;
